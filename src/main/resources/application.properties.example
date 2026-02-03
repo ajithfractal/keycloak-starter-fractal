@@ -1,0 +1,53 @@
+# ============================================
+# Keycloak Configuration Template
+# ============================================
+# Copy this file to your application's src/main/resources/application.properties
+# and update the values with your Keycloak client details
+#
+# Step 1: Create a client in Keycloak Admin Console
+# Step 2: Copy the client-id and client-secret here
+# Step 3: Update server-url and realm if different
+
+# ============================================
+# Required: Keycloak Server Configuration
+# ============================================
+fractalhive.keycloak.server-url=https://your-keycloak-server.com
+fractalhive.keycloak.realm=your-realm-name
+fractalhive.keycloak.client-id=your-product-client-id
+fractalhive.keycloak.client-secret=your-product-client-secret
+fractalhive.keycloak.resource-id=${fractalhive.keycloak.client-id}
+
+# ============================================
+# Required: Spring Security JWT Configuration
+# ============================================
+spring.security.oauth2.resourceserver.jwt.issuer-uri=${fractalhive.keycloak.server-url}/realms/${fractalhive.keycloak.realm}
+
+# ============================================
+# Optional: Cookie Configuration
+# ============================================
+# Uncomment and configure if using cookie-based authentication
+# fractalhive.keycloak.cookie.secure=true
+# fractalhive.keycloak.cookie.domain=.yourdomain.com
+# fractalhive.keycloak.cookie.same-site=None
+
+# ============================================
+# Optional: Admin Realm Configuration
+# ============================================
+# The realm used for obtaining admin access tokens
+# If not specified, uses the same realm as your target realm (recommended)
+# Only set to "master" if you specifically need master realm authentication
+# fractalhive.keycloak.admin-realm=fractalhive
+
+# ============================================
+# Optional: Admin Client Configuration
+# ============================================
+# Uncomment if you want to use a separate admin client for role/user management
+# If not specified, uses the main client-id and client-secret
+# fractalhive.keycloak.admin.client-id=admin-cli
+# fractalhive.keycloak.admin.client-secret=admin-secret
+
+# ============================================
+# Optional: Public Endpoints
+# ============================================
+# Uncomment to customize public endpoints (defaults are already included)
+# fractalhive.keycloak.public-endpoints=/auth/login,/auth/register,/auth/refresh,/swagger-ui/**,/v3/api-docs/**
