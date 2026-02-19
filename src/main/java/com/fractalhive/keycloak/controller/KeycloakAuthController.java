@@ -25,13 +25,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * REST controller for Keycloak authentication and authorization endpoints.
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Tag(name = "Keycloak Authentication", description = "API endpoints for Keycloak authentication, user management, password management, and role management")
 public class KeycloakAuthController {
@@ -419,47 +418,64 @@ public class KeycloakAuthController {
     // ========== Helper Methods ==========
 
     private void setAuthCookies(HttpServletResponse response, LoginResponse loginResponse) {
-        boolean secure = properties.getCookie().isSecure();
-        String sameSite = properties.getCookie().getSameSite();
-        String domain = properties.getCookie().getDomain();
-
-        String accessCookie = JwtCookieAuthenticationFilter.ACCESS_TOKEN_COOKIE + "=" + loginResponse.accessToken()
-                + "; Path=/"
-                + "; HttpOnly"
-                + (secure ? "; Secure" : "")
-                + "; SameSite=" + sameSite
-                + "; Max-Age=" + loginResponse.accessTokenExpiresIn()
-                + (domain != null ? "; Domain=" + domain : "");
-
-        String refreshCookie = JwtCookieAuthenticationFilter.REFRESH_TOKEN_COOKIE + "=" + loginResponse.refreshToken()
-                + "; Path=/"
-                + "; HttpOnly"
-                + (secure ? "; Secure" : "")
-                + "; SameSite=" + sameSite
-                + "; Max-Age=" + loginResponse.refreshTokenExpiresIn()
-                + (domain != null ? "; Domain=" + domain : "");
-
+        String accessCookie = buildCookie(
+                JwtCookieAuthenticationFilter.ACCESS_TOKEN_COOKIE,
+                loginResponse.accessToken(),
+                loginResponse.accessTokenExpiresIn()
+        );
+        String refreshCookie = buildCookie(
+                JwtCookieAuthenticationFilter.REFRESH_TOKEN_COOKIE,
+                loginResponse.refreshToken(),
+                loginResponse.refreshTokenExpiresIn()
+        );
         response.addHeader("Set-Cookie", accessCookie);
         response.addHeader("Set-Cookie", refreshCookie);
     }
 
     private void clearAuthCookies(HttpServletResponse response) {
-        boolean secure = properties.getCookie().isSecure();
-        String sameSite = properties.getCookie().getSameSite();
-        String domain = properties.getCookie().getDomain();
-
-        String accessCookie = JwtCookieAuthenticationFilter.ACCESS_TOKEN_COOKIE + "=; Path=/; Max-Age=0; HttpOnly"
-                + (secure ? "; Secure" : "")
-                + "; SameSite=" + sameSite
-                + (domain != null ? "; Domain=" + domain : "");
-
-        String refreshCookie = JwtCookieAuthenticationFilter.REFRESH_TOKEN_COOKIE + "=; Path=/; Max-Age=0; HttpOnly"
-                + (secure ? "; Secure" : "")
-                + "; SameSite=" + sameSite
-                + (domain != null ? "; Domain=" + domain : "");
-
+        String accessCookie = buildClearCookie(JwtCookieAuthenticationFilter.ACCESS_TOKEN_COOKIE);
+        String refreshCookie = buildClearCookie(JwtCookieAuthenticationFilter.REFRESH_TOKEN_COOKIE);
         response.addHeader("Set-Cookie", accessCookie);
         response.addHeader("Set-Cookie", refreshCookie);
+    }
+
+    private String buildCookie(String name, String value, int maxAge) {
+        var cookie = properties.getCookie();
+        StringBuilder cookieBuilder = new StringBuilder(name)
+                .append("=").append(value)
+                .append("; Path=/")
+                .append("; HttpOnly");
+        
+        if (cookie.isSecure()) {
+            cookieBuilder.append("; Secure");
+        }
+        
+        cookieBuilder.append("; SameSite=").append(cookie.getSameSite())
+                .append("; Max-Age=").append(maxAge);
+        
+        if (cookie.getDomain() != null) {
+            cookieBuilder.append("; Domain=").append(cookie.getDomain());
+        }
+        
+        return cookieBuilder.toString();
+    }
+
+    private String buildClearCookie(String name) {
+        var cookie = properties.getCookie();
+        StringBuilder cookieBuilder = new StringBuilder(name)
+                .append("=; Path=/; Max-Age=0; HttpOnly");
+        
+        if (cookie.isSecure()) {
+            cookieBuilder.append("; Secure");
+        }
+        
+        cookieBuilder.append("; SameSite=").append(cookie.getSameSite());
+        
+        if (cookie.getDomain() != null) {
+            cookieBuilder.append("; Domain=").append(cookie.getDomain());
+        }
+        
+        return cookieBuilder.toString();
     }
 
     private String getRefreshToken(HttpServletRequest request) {
@@ -467,13 +483,11 @@ public class KeycloakAuthController {
         if (cookies == null) {
             return null;
         }
-
         for (Cookie cookie : cookies) {
-            if (cookie.getName().equals(JwtCookieAuthenticationFilter.REFRESH_TOKEN_COOKIE)) {
+            if (JwtCookieAuthenticationFilter.REFRESH_TOKEN_COOKIE.equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }
-
         return null;
     }
 }

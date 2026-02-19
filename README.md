@@ -6,11 +6,25 @@ A reusable Spring Boot starter project that encapsulates all Keycloak authentica
 
 - **Multi-tenancy Support**: Each application can configure its own realm and client
 - **Complete Isolation**: Applications don't interfere with each other
-- **Flexible Authentication**: Supports both cookie and bearer token authentication
-- **Role Management**: Full CRUD operations for roles and composite roles
-- **User Management**: Registration, update, and user operations
-- **Password Management**: Reset and change password flows
+- **Flexible Authentication**: Supports both cookie-based and bearer token authentication
+- **Dual Authentication Methods**: 
+  - HTTP-only cookies for web applications
+  - Bearer tokens for API clients
+- **Role Management**: 
+  - Full CRUD operations for realm roles
+  - Client role support
+  - Composite roles with sub-roles
+  - Role assignment to users (realm and client roles)
+- **User Management**: 
+  - User registration
+  - User lookup by ID or email
+  - User update and deletion
+- **Password Management**: 
+  - Password reset request (sends email)
+  - Password reset with new password
+  - Password change for authenticated users
 - **Auto-configuration**: Zero-code integration for basic use cases
+- **Swagger/OpenAPI Documentation**: Interactive API documentation included
 - **Customizable**: All components can be overridden by consuming applications
 
 ## Quick Start for New Product
@@ -64,20 +78,27 @@ fractalhive.keycloak.cookie.secure=true
 fractalhive.keycloak.cookie.domain=.yourdomain.com
 fractalhive.keycloak.cookie.same-site=None
 
+# Optional: Admin Realm (for admin authentication)
+# If not specified, uses the same realm as your target realm
+# Only set to "master" if you specifically need master realm authentication
+# fractalhive.keycloak.admin-realm=fractalhive
+
 # Optional: Admin Client (for role/user management)
 # If not specified, uses the main client-id and client-secret
-fractalhive.keycloak.admin.client-id=admin-cli
-fractalhive.keycloak.admin.client-secret=admin-secret
+# fractalhive.keycloak.admin.client-id=admin-cli
+# fractalhive.keycloak.admin.client-secret=admin-secret
 ```
 
 ### Step 4: Start Your Application
 
 That's it! Your application now has:
 - ✅ Authentication endpoints at `/auth/*`
-- ✅ JWT token validation
+- ✅ JWT token validation (both cookie and bearer token)
 - ✅ Role-based authorization
 - ✅ User management APIs
-- ✅ Swagger UI at `/swagger-ui.html`
+- ✅ Password management (reset, change)
+- ✅ Role management (realm and client roles, composite roles)
+- ✅ Swagger/OpenAPI documentation at `/swagger-ui.html`
 
 ### Example Configuration
 
@@ -116,47 +137,40 @@ This MUST be unique per application. Please add this property to your applicatio
 
 ```
 fractalhive-spring-boot-starter-keycloak/
-├── pom.xml (Parent POM)
+├── pom.xml
 ├── README.md
-├── fractalhive-keycloak-autoconfigure/
-│   ├── pom.xml
-│   └── src/main/java/com/fractalhive/keycloak/
-│       ├── autoconfigure/
-│       │   ├── KeycloakAuthAutoConfiguration.java
-│       │   └── KeycloakAuthProperties.java
-│       ├── config/
-│       │   ├── SecurityConfig.java
-│       │   ├── JwtAuthConverter.java
-│       │   ├── JwtCookieAuthenticationFilter.java
-│       │   ├── AuthorizationHeaderRequestWrapper.java
-│       │   └── WebClientConfig.java
-│       ├── controller/
-│       │   └── KeycloakAuthController.java
-│       ├── service/
-│       │   ├── KeycloakAuthService.java
-│       │   ├── KeycloakUserService.java
-│       │   ├── KeycloakRoleService.java
-│       │   └── KeycloakPasswordService.java
-│       ├── dto/
-│       │   ├── LoginRequest.java
-│       │   ├── LoginResponse.java
-│       │   ├── RegisterRequest.java
-│       │   ├── RegisterResponse.java
-│       │   ├── UserInfoResponse.java
-│       │   ├── RoleRequest.java
-│       │   ├── RoleResponse.java
-│       │   ├── AssignRoleRequest.java
-│       │   └── PasswordResetRequest.java
-│       ├── exception/
-│       │   └── KeycloakAuthException.java
-│       └── util/
-│           └── SecurityUtils.java
-└── fractalhive-keycloak-starter/
-    ├── pom.xml
-    └── src/main/resources/
-        └── META-INF/
-            └── spring/
-                └── org.springframework.boot.autoconfigure.AutoConfiguration.imports
+└── src/main/java/com/fractalhive/keycloak/
+    ├── autoconfigure/
+    │   ├── KeycloakAuthAutoConfiguration.java
+    │   └── KeycloakAuthProperties.java
+    ├── config/
+    │   ├── SecurityConfig.java
+    │   ├── JwtAuthConverter.java
+    │   ├── JwtCookieAuthenticationFilter.java
+    │   ├── AuthorizationHeaderRequestWrapper.java
+    │   ├── WebClientConfig.java
+    │   └── OpenApiConfig.java
+    ├── controller/
+    │   └── KeycloakAuthController.java
+    ├── service/
+    │   ├── KeycloakAuthService.java
+    │   ├── KeycloakUserService.java
+    │   ├── KeycloakRoleService.java
+    │   └── KeycloakPasswordService.java
+    ├── dto/
+    │   ├── LoginRequest.java
+    │   ├── LoginResponse.java
+    │   ├── RegisterRequest.java
+    │   ├── RegisterResponse.java
+    │   ├── UserInfoResponse.java
+    │   ├── RoleRequest.java
+    │   ├── RoleResponse.java
+    │   ├── AssignRoleRequest.java
+    │   └── PasswordResetRequest.java
+    ├── exception/
+    │   └── KeycloakAuthException.java
+    └── util/
+        └── SecurityUtils.java
 ```
 
 ## Building the Starter
@@ -182,9 +196,8 @@ mvn clean install -Prelease
 mvn clean install
 ```
 
-This will install the JARs to your local Maven repository at:
+This will install the JAR to your local Maven repository at:
 - `~/.m2/repository/com/fractalhive/fractalhive-spring-boot-starter-keycloak/1.0.0/`
-- `~/.m2/repository/com/fractalhive/fractalhive-keycloak-autoconfigure/1.0.0/`
 
 ## Using the Starter in Your Application
 
@@ -217,9 +230,14 @@ fractalhive.keycloak.cookie.secure=true
 fractalhive.keycloak.cookie.domain=.example.com
 fractalhive.keycloak.cookie.same-site=None
 
-# Admin Client Configuration (for role/user management)
-fractalhive.keycloak.admin.client-id=admin-cli
-fractalhive.keycloak.admin.client-secret=admin-secret
+# Optional: Admin Realm Configuration
+# If not specified, uses the same realm as your target realm
+# fractalhive.keycloak.admin-realm=fractalhive
+
+# Optional: Admin Client Configuration (for role/user management)
+# If not specified, uses the main client-id and client-secret
+# fractalhive.keycloak.admin.client-id=admin-cli
+# fractalhive.keycloak.admin.client-secret=admin-secret
 
 # Spring Security OAuth2 Resource Server JWT Configuration
 # This is required for JWT token validation
@@ -257,43 +275,52 @@ All configuration properties are prefixed with `fractalhive.keycloak`:
 | `cookie.same-site` | SameSite policy | No | `None` |
 | `admin.client-id` | Admin client ID | No | Same as `client-id` |
 | `admin.client-secret` | Admin client secret | No | Same as `client-secret` |
+| `admin-realm` | Admin realm for authentication | No | Same as `realm` |
 | `public-endpoints` | Public endpoints array | No | Default endpoints |
 
 ## API Endpoints
 
+All endpoints are documented with Swagger/OpenAPI. Access the interactive API documentation at `/swagger-ui.html` when your application is running.
+
 ### Authentication Endpoints
 
-- `POST /auth/login` - User login
-- `POST /auth/logout` - User logout
-- `POST /auth/refresh` - Refresh access token
-- `GET /auth/me` - Get current user info
+- `POST /auth/login` - User login (returns tokens in HTTP-only cookies)
+- `POST /auth/logout` - User logout (invalidates refresh token and clears cookies)
+- `POST /auth/refresh` - Refresh access token using refresh token from cookies
+- `GET /auth/me` - Get current user info (requires authentication)
+
+**Authentication Methods:**
+- **Cookie-based**: Tokens are automatically stored in HTTP-only cookies after login
+- **Bearer token**: Include `Authorization: Bearer <token>` header for API calls
 
 ### User Management Endpoints
 
-- `POST /auth/register` - Register new user
+- `POST /auth/register` - Register new user (public endpoint)
 
 ### Password Management Endpoints
 
-- `POST /auth/password/reset-request` - Request password reset (sends email)
-- `POST /auth/password/reset` - Reset password with token
-- `POST /auth/password/change` - Change password (authenticated user)
+- `POST /auth/password/reset-request?email={email}` - Request password reset (sends email with reset link)
+- `POST /auth/password/reset` - Reset password with new password (requires email and new password)
+- `POST /auth/password/change?newPassword={password}` - Change password (authenticated user)
 
 ### Role Management Endpoints
 
-- `GET /auth/roles` - List all roles
+- `GET /auth/roles` - List all realm roles (Note: Currently returns empty list - full implementation pending)
 - `POST /auth/roles` - Create realm role
-- `GET /auth/roles/{roleName}` - Get role details
-- `PUT /auth/roles/{roleName}` - Update role
-- `DELETE /auth/roles/{roleName}` - Delete role
-- `POST /auth/roles/{roleName}/composite` - Create composite role
-- `POST /auth/roles/{roleName}/sub-roles` - Add sub-role to composite role
-- `DELETE /auth/roles/{roleName}/sub-roles/{subRoleName}` - Remove sub-role
+- `GET /auth/roles/{roleName}` - Get realm role details
+- `PUT /auth/roles/{roleName}` - Update realm role
+- `DELETE /auth/roles/{roleName}` - Delete realm role
+- `POST /auth/roles/{roleName}/composite` - Create composite role with sub-roles
+- `POST /auth/roles/{roleName}/sub-roles?subRoleName={name}` - Add sub-role to composite role
+- `DELETE /auth/roles/{roleName}/sub-roles/{subRoleName}` - Remove sub-role from composite role
+
+**Note:** The starter supports both realm roles and client roles. When assigning roles to users, you can specify `isRealmRole=true` (default) for realm roles or `isRealmRole=false` for client roles.
 
 ### User Role Assignment Endpoints
 
-- `POST /auth/users/{userId}/roles` - Assign role(s) to user
-- `DELETE /auth/users/{userId}/roles/{roleName}` - Remove role from user
-- `GET /auth/users/{userId}/roles` - Get all roles for a user
+- `POST /auth/users/{userId}/roles?isRealmRole={true|false}` - Assign role(s) to user (supports both realm and client roles)
+- `DELETE /auth/users/{userId}/roles/{roleName}?isRealmRole={true|false}` - Remove role from user
+- `GET /auth/users/{userId}/roles` - Get all realm roles for a user
 
 ## Multi-Application Configuration & Isolation
 
@@ -419,14 +446,44 @@ mvn clean install -Prelease
 mvn clean install
 ```
 
+## Authentication Flow
+
+### Cookie-Based Authentication (Web Applications)
+
+1. User calls `POST /auth/login` with credentials
+2. Server authenticates with Keycloak and receives JWT tokens
+3. Tokens are stored in HTTP-only cookies (`access_token` and `refresh_token`)
+4. Subsequent requests automatically include cookies
+5. `JwtCookieAuthenticationFilter` extracts token from cookie and validates it
+6. User can call `POST /auth/refresh` to refresh the access token
+7. User calls `POST /auth/logout` to invalidate tokens and clear cookies
+
+### Bearer Token Authentication (API Clients)
+
+1. User calls `POST /auth/login` with credentials
+2. Server returns tokens in response body (or extract from cookies)
+3. Client includes `Authorization: Bearer <access_token>` header in requests
+4. Spring Security validates the JWT token using the configured issuer URI
+5. User can call `POST /auth/refresh` with refresh token to get new access token
+
+### Role Extraction
+
+Roles are extracted from JWT tokens in two ways:
+- **Realm roles**: From `realm_access.roles` claim
+- **Client roles**: From `resource_access.{resource-id}.roles` claim
+
+The `resource-id` defaults to your `client-id` but can be configured separately.
+
 ## Customization
 
 All components can be overridden by consuming applications:
 
-- **SecurityConfig**: Override `SecurityFilterChain` bean
-- **CorsConfigurationSource**: Override `CorsConfigurationSource` bean
-- **WebClient**: Override `WebClient` bean
+- **SecurityConfig**: Override `SecurityFilterChain` bean to customize security rules
+- **CorsConfigurationSource**: Override `CorsConfigurationSource` bean to customize CORS
+- **WebClient**: Override `WebClient` bean to customize HTTP client settings
 - **Services**: All services are `@Service` beans that can be extended or replaced
+- **JwtAuthConverter**: Override to customize JWT to Authentication conversion
+- **JwtCookieAuthenticationFilter**: Override to customize cookie-based authentication
 
 ## Updating the Starter
 
@@ -483,9 +540,21 @@ mvn clean deploy
 
 ## Requirements
 
-- Java 21+
-- Spring Boot 3.5.7+
-- Maven 3.6+
+- **Java 21+**
+- **Spring Boot 3.5.7+**
+- **Maven 3.6+**
+- **Keycloak Server** (version 20+ recommended)
+
+## Dependencies
+
+The starter includes the following key dependencies:
+- Spring Boot Starter Web
+- Spring Boot Starter Security
+- Spring Boot Starter OAuth2 Resource Server
+- Spring WebFlux (for WebClient)
+- SpringDoc OpenAPI (Swagger UI)
+- Lombok
+- Jakarta Validation
 
 ## License
 
