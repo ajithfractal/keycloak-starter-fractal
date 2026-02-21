@@ -125,12 +125,15 @@ public class KeycloakWorkflowFilter extends OncePerRequestFilter {
      */
     private boolean shouldSkipAuthentication(HttpServletRequest request) {
         String path = request.getRequestURI();
-        
-        // Skip for public registration endpoint
-        if (path.equals("/api/applications/register")) {
+        if (path.equals("/api/auth/login")) {
             return true;
         }
-        
+        if (path.equals("/api/auth/register")) {
+            return true;
+        }
+        if (path.equals("/api/auth/refresh")) {
+            return true;
+        }
         // Skip for health check endpoints
         if (path.startsWith("/actuator/health")) {
             return true;
@@ -220,6 +223,6 @@ public class KeycloakWorkflowFilter extends OncePerRequestFilter {
      * Extracts schema name from JWT token.
      */
     private String extractSchema(Jwt jwt) {
-        return jwt.getClaimAsString("schema");
+        return jwt.getClaimAsString(SCHEMA_NAME_ATTRIBUTE);
     }
 }

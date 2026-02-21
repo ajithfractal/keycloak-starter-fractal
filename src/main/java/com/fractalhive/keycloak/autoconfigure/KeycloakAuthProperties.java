@@ -65,9 +65,9 @@ public class KeycloakAuthProperties {
      * Property: {@code fractalhive.keycloak.public-endpoints}
      */
     private String[] publicEndpoints = {
-            "/auth/login",
-            "/auth/register",
-            "/auth/refresh",
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**"

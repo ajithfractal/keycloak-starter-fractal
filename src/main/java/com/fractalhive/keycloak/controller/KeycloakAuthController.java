@@ -52,13 +52,13 @@ public class KeycloakAuthController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials")
     })
     @PostMapping("/login")
-    public ResponseEntity<Void> login(
+    public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletResponse response
     ) {
         LoginResponse loginResponse = authService.login(loginRequest);
         setAuthCookies(response, loginResponse);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(loginResponse);
     }
 
     @Operation(
